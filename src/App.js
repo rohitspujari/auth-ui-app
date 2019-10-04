@@ -1,26 +1,13 @@
 import React from 'react';
-import logo from './logo.svg';
-import './App.css';
+import { withAuth } from './Auth';
+import { Auth } from 'aws-amplify';
 
-function App() {
-  return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
-  );
-}
+const signOut = async () => {
+  await Auth.signOut();
+};
 
-export default App;
+const App = () => {
+  return <button onClick={signOut}>Sign Out</button>;
+};
+
+export default withAuth(App);

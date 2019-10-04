@@ -1,0 +1,9 @@
+{
+	"auth": {
+		"authuiapp0be78f22": {
+			"service": "Cognito",
+			"providerPlugin": "awscloudformation",
+			"dependsOn": []
+		}
+	}
+}
