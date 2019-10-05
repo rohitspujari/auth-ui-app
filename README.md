@@ -66,3 +66,16 @@ This section has moved here: https://facebook.github.io/create-react-app/docs/de
 ### `npm run build` fails to minify
 
 This section has moved here: https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify
+
+### Dependencies
+
+Drop 2 Files - Auth.js and Header.js in src/ folder
+yarn add aws-amplify
+yarn add aws-amplify-react
+yarn add @material-ui/core
+
+For federated login ->
+
+1. Make sure to map name -> Name (at the very least)
+2. Follow the steps outlined in the blog below to configure hosted UI
+   https://dev.to/dabit3/the-complete-guide-to-user-authentication-with-the-amplify-framework-2inh

@@ -7,7 +7,7 @@ const signOut = async () => {
 };
 
 const App = () => {
-  return <button onClick={signOut}>Sign Out</button>;
+  return <p>Welcome to the App</p>;
 };
 
 export default withAuth(App);

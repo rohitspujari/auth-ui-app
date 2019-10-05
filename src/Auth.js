@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useReducer, createContext } from 'react';
 import awsconfig from './aws-exports';
 import Amplify, { Auth, Hub } from 'aws-amplify';
+import Header from './Header';
 
 import {
   TextField,
@@ -17,6 +18,8 @@ import { makeStyles } from '@material-ui/core/styles';
 import { useTheme } from '@material-ui/core/styles';
 
 Amplify.configure(awsconfig);
+
+const UserContext = createContext('nullsdsdsdsd');
 
 const useStyles = makeStyles(theme => ({
   root: {},
@@ -58,6 +61,7 @@ function AuthUI() {
   const handleSignIn = async (username, password) => {
     try {
       await Auth.signIn(username, password); //console.log(user);
+      //setFormType('Loading');
     } catch (err) {
       console.log(err);
       setError(err.message);
@@ -248,8 +252,19 @@ function SignIn({ formChange, signIn }) {
         </Grid>
       </Grid>
       <Divider style={{ marginTop: 20 }} />
-      <NonCapsButton>Sign In with Google</NonCapsButton>
-      <NonCapsButton>Sign In with Facebook</NonCapsButton>
+      <NonCapsButton
+        onClick={() => Auth.federatedSignIn({ provider: 'Google' })}
+      >
+        Sign In with Google
+      </NonCapsButton>
+      <NonCapsButton
+        onClick={() => Auth.federatedSignIn({ provider: 'Facebook' })}
+      >
+        Sign In with Facebook
+      </NonCapsButton>
+      <NonCapsButton onClick={() => Auth.federatedSignIn()}>
+        Sign In Hosted UI
+      </NonCapsButton>
       {/* <Button
         style={{ marginTop: 20 }}
         variant="outlined"
@@ -584,11 +599,25 @@ function ConfirmSignUp({ formChange, confirmSignUp, username }) {
   );
 }
 
-const NonCapsButton = ({ children }) => {
-  const theme = useTheme();
-  const classes = useStyles(theme);
+const Loading = () => {
+  return (
+    <Grid container justify="center">
+      <CircularProgress
+        style={{
+          marginTop: window.innerHeight / 2
+        }}
+        disableShrink
+      />
+    </Grid>
+  );
+};
+
+const NonCapsButton = ({ children, onClick }) => {
+  //const theme = useTheme();
+  const classes = useStyles();
   return (
     <Button
+      onClick={onClick}
       style={{ marginTop: 20 }}
       variant="outlined"
       color="primary"
@@ -605,7 +634,7 @@ const NonCapsButton = ({ children }) => {
 
 const LinkButton = props => {
   const theme = useTheme(); //console.log(theme);
-  const classes = useStyles(theme);
+  const classes = useStyles();
 
   const { label, linkLabel, formChange, variant } = props;
 
@@ -625,35 +654,58 @@ const LinkButton = props => {
   );
 };
 
+const reducer = (state, action) => {
+  switch (action.type) {
+    case 'signIn':
+      return { ...state, appState: 'authenticated', user: action.payload };
+    case 'signOut':
+      return { ...state, appState: 'unauthenticated', user: undefined };
+  }
+};
+
 const useAuth = () => {
-  const [user, setUser] = useState(); // cognitoUser
-  const [appState, setAppState] = useState(); //undefined (loading), unauthenticated, authenticated
+  const [{ appState, user }, dispatch] = useReducer(reducer, {
+    appState: 'unauthenticated'
+  });
 
   const getAuthenticatedUser = async () => {
+    //console.log('I am loading the component');
     try {
       const authedUser = await Auth.currentAuthenticatedUser({
-        bypassCache: true // Optional, By default is false. If set to true, this call will send a request to Cognito to get the latest user data
-      }); //console.log('auth state:', authedUser);
-      setUser(authedUser);
-      setAppState('authenticated');
+        bypassCache: false // Optional, By default is false. If set to true, this call will send a request to Cognito to get the latest user data
+      }); //console.log(Auth.user);
+      dispatch({ type: 'signIn', payload: authedUser });
     } catch (err) {
-      setAppState('unauthenticated');
+      //console.log(err);
     }
   };
 
   useEffect(() => {
-    Hub.listen('auth', ({ payload }) => {
-      switch (payload.event) {
-        case 'signOut':
-          setAppState('unauthenticated');
-          setUser(undefined);
-          break;
-        case 'signIn': //console.log(Auth.user);
-          setAppState('authenticated');
-          setUser(Auth.user);
-          break;
-      }
-    });
+    Hub.listen(
+      'auth',
+      ({ payload }) => {
+        //debugger;
+        console.log(payload);
+        switch (payload.event) {
+          case 'oAuthSignOut':
+            //dispatch({ type: 'signOut' });
+            break;
+          case 'signOut':
+            if (payload.data.attributes.identities) {
+              //This is necessary check, if removed the Auth UI will refresh twice. Once due to signOut state change, and other due to browser refresh as a result of logging out from oauth provider (facebook)
+              return;
+            }
+            dispatch({ type: 'signOut' });
+
+            break;
+          case 'signIn': //console.log(Auth.user);
+            getAuthenticatedUser();
+            //dispatch({ type: 'signIn', payload: Auth.user });
+            break;
+        }
+      },
+      []
+    );
 
     getAuthenticatedUser();
   }, []);
@@ -662,24 +714,23 @@ const useAuth = () => {
 };
 
 const withAuth = Component => props => {
-  const { appState } = useAuth(); //console.log(window);
+  const { appState, user } = useAuth(); //console.log(window);
+  console.log(appState, user);
   switch (appState) {
     case 'authenticated':
-      return <Component {...props} />;
+      return (
+        <>
+          <UserContext.Provider value={user}>
+            <Header />
+            <Component {...props} />
+          </UserContext.Provider>
+        </>
+      );
     case 'unauthenticated':
       return <AuthUI />;
     default:
-      return (
-        <Grid container justify="center">
-          <CircularProgress
-            style={{
-              marginTop: window.innerHeight / 2
-            }}
-            disableShrink
-          />
-        </Grid>
-      );
+      return <Loading />;
   }
 };
 
-export { AuthUI, useAuth, withAuth };
+export { AuthUI, useAuth, withAuth, UserContext };
