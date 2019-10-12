@@ -73,6 +73,7 @@ Drop 2 Files - Auth.js and Header.js in src/ folder
 yarn add aws-amplify
 yarn add aws-amplify-react
 yarn add @material-ui/core
+yarn add @material-ui/icons
 
 For federated login ->
 

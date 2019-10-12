@@ -12,7 +12,9 @@
         },
         "categories": {
             "auth": {
-                "authuiapp0be78f22": {}
+                "authuiapp0be78f22": {
+                    "hostedUIProviderCreds": "[{\"ProviderName\":\"Google\",\"client_id\":\"xx\",\"client_secret\":\"xx\"}]"
+                }
             }
         }
     }
